@@ -1,0 +1,12 @@
+{
+  "name": "rtl-fix",
+  "version": "0.4.4",
+  "description": "Right-to-left Arabic blocks in the Desktop transcript (/rtl picks the rule); code stays LTR",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Eyas Anwar"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/iyasanwar/claude-desktop-rtl",
+  "homepage": "https://github.com/iyasanwar/claude-desktop-rtl"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "claude-desktop-rtl",
+  "owner": { "name": "Eyas Anwar" },
+  "plugins": [
+    {
+      "name": "rtl-fix",
+      "source": "./",
+      "description": "Right-to-left Arabic blocks in the Desktop transcript; code stays LTR"
+    }
+  ]
+}
