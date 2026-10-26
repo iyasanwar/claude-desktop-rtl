@@ -4,7 +4,7 @@ A Claude Code mod that makes Arabic read right to left in the Claude Desktop app
 
 - A paragraph, heading, list item, quote or table cell where Arabic is a real share of the letters (about 30% or more) reads right to left and sits on the right. The letter it starts with doesn't matter.
 - Long Arabic paragraphs are cut into lines by the mod, so every line, the last one included, stays on the right.
-- English words and inline code inside an Arabic line keep their own left-to-right order, on a shaded background.
+- English words and inline code inside an Arabic line keep their own left-to-right order, styled like Desktop's inline code (brick-red text in a shaded box).
 - Code blocks and English paragraphs are left to the app, unchanged.
 - Your own messages keep the app's style. Their Arabic lines read right to left.
 - It only acts on the Desktop surface. The terminal, VS Code and mobile are untouched.

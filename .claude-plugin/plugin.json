@@ -1,6 +1,6 @@
 {
   "name": "rtl-fix",
-  "version": "0.4.4",
+  "version": "0.4.6",
   "description": "Right-to-left Arabic blocks in the Desktop transcript (/rtl picks the rule); code stays LTR",
   "types": "./types/index.d.ts",
   "author": {

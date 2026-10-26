@@ -26,10 +26,9 @@ const RLM = '\u200F'
 // A strong LTR letter: keeps a list number "1." from reading ".1" beside RTL text.
 const LRM = '\u200E'
 
-// English inside Arabic: the text's own color on a shaded background, apart
-// from links' color. White at 15%: a dark gray over a dark transcript, white
-// text on it keeps its contrast (`subtle` was too light for that).
-const LATIN = { backgroundColor: '#ffffff26' } as const
+// English inside Arabic, styled like Desktop's inline code: its colors, read
+// off a screenshot of the dark theme (text #c96f6a in a #2c2c2c box on #222222).
+const LATIN = { color: '#c96f6a', backgroundColor: '#2c2c2c' } as const
 
 // One flat label for a link: Link draws a string.
 function plain(spans: readonly Span[]): string {
