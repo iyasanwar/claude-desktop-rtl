@@ -23,8 +23,6 @@ const isolate = (dir: Dir) => (dir === 'rtl' ? RLI : LRI)
 // A strong RTL letter ahead of the isolate: Desktop aligns a line by the first
 // strong letter it finds, and an isolate's contents are skipped by that search.
 const RLM = '\u200F'
-// A strong LTR letter: keeps a list number "1." from reading ".1" beside RTL text.
-const LRM = '\u200E'
 
 // English inside Arabic, styled like Desktop's inline code: its colors, read
 // off a screenshot of the dark theme (text #c96f6a in a #2c2c2c box on #222222).
@@ -97,19 +95,36 @@ function wordAtoms(word: string, wraps: readonly Wrap[]): Atom[] {
   return out
 }
 
-function atoms(spans: readonly Span[], wraps: readonly Wrap[] = []): Atom[] {
-  return spans.flatMap((s): Atom[] => {
+// `state.space`: whether a space came last, across spans, so "`x`." keeps its
+// full stop against the code and "**a**b" stays one word.
+function atoms(spans: readonly Span[], wraps: readonly Wrap[] = [], state = { space: true }): Atom[] {
+  const out: Atom[] = []
+  const push = (list: Atom[]) => {
+    const [first, ...rest] = list
+    if (!first) return
+    out.push(state.space ? first : { ...first, glue: true }, ...rest)
+    state.space = false
+  }
+  for (const s of spans) {
     switch (s.t) {
       case 'text':
-        return s.text.split(/\s+/).filter(w => w !== '').flatMap(w => wordAtoms(w, wraps))
+        for (const token of s.text.split(/(\s+)/)) {
+          if (token === '') continue
+          if (/^\s+$/.test(token)) state.space = true
+          else push(wordAtoms(token, wraps))
+        }
+        break
       case 'code':
-        return [{ text: s.text, kind: 'code', wraps }]
+        push([{ text: s.text, kind: 'code', wraps }])
+        break
       case 'link':
-        return [{ text: plain(s.children), kind: 'link', href: s.href, wraps }]
+        push([{ text: plain(s.children), kind: 'link', href: s.href, wraps }])
+        break
       default:
-        return atoms(s.children, [...wraps, s.t])
+        out.push(...atoms(s.children, [...wraps, s.t], state))
     }
-  })
+  }
+  return out
 }
 
 function breakLines(list: readonly Atom[], width: number | undefined): Atom[][] {
@@ -169,8 +184,25 @@ function drawAtoms(t: T, line: readonly Atom[]): (string | RenderElement)[] {
 type LineStyle = { weight?: 'bold'; size?: 'title' | 'heading'; dimColor?: boolean }
 
 // A run of text in its own direction, pushed to its own edge.
-function line(t: T, text: string, dir: Dir, style: LineStyle = {}, width?: number) {
+//
+// A list item's `marker` stands beside the lines, on their right. Desktop
+// flipped "1." to ".1" in every form tried (inside the line, isolated, between
+// LRMs, the stop written first, a Text of its own), and laid `row-reverse` out
+// as `row`; so the marker is drawn after the lines in a `row`, and a number as
+// a row of one-character Texts, which no bidi can reorder.
+function line(t: T, text: string, dir: Dir, style: LineStyle = {}, width?: number, marker?: string): RenderElement {
   const { Box, Text } = t
+  if (marker !== undefined && dir === 'rtl') {
+    const hang = Math.ceil(marker.length * CELLS.latin + CELLS.space)
+    return (
+      <Box flexDirection="row" alignItems="flex-start" gap="xs">
+        {line(t, text, dir, style, width === undefined ? undefined : width - hang)}
+        <Box flexDirection="row" flexShrink={0}>
+          {[...marker].map(ch => <Text {...style}>{ch}</Text>)}
+        </Box>
+      </Box>
+    )
+  }
   if (dir === 'ltr') {
     return (
       <Box flexDirection="column" flexGrow={1} flexShrink={1} alignItems="flex-start">
@@ -212,24 +244,18 @@ function drawTable(t: T, rows: readonly string[][], dir: Dir, m: Mode, width?: n
 // A block that reads right to left (or a table with Arabic in it), drawn by hand.
 function drawBlock(t: T, block: Block, dir: Dir, m: Mode, width?: number) {
   const { Box, Text } = t
-  const row = dir === 'rtl' ? 'row-reverse' : 'row'
   switch (block.kind) {
     case 'heading':
       return line(t, block.text, dir, { weight: 'bold', size: block.level === 1 ? 'title' : block.level === 2 ? 'heading' : undefined }, width)
     case 'item':
+      // Drawn here only when it reads RTL (an LTR item stays in the Markdown run).
       return (
-        <Box flexDirection={row} gap="xs" {...(dir === 'rtl' ? { paddingRight: block.depth * 2 } : { paddingLeft: block.depth * 2 })}>
-          <Text dir="ltr">{/^\d/.test(block.marker) ? LRM + block.marker + LRM : '•'}</Text>
-          {line(t, block.text, dir, {}, width === undefined ? undefined : width - block.depth * 2 - 3)}
+        <Box flexDirection="column" paddingRight={block.depth * 2}>
+          {line(t, block.text, dir, {}, width === undefined ? undefined : width - block.depth * 2, /^\d/.test(block.marker) ? block.marker : '•')}
         </Box>
       )
     case 'quote':
-      return (
-        <Box flexDirection={row} gap="xs">
-          <Text dimColor>┃</Text>
-          {line(t, block.text, dir, { dimColor: true }, width === undefined ? undefined : width - 3)}
-        </Box>
-      )
+      return line(t, block.text, dir, { dimColor: true }, width, '┃')
     case 'table':
       return drawTable(t, block.rows, dir, m, width === undefined ? undefined : width - 4)
     default:

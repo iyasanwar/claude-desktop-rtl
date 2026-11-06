@@ -96,3 +96,18 @@ test('English cut out of the punctuation that clings to it is shaded whole', asy
   expect(row?.text).toBe('\u200F\u2067افتح موقع \u2066example.com\u2069، ثم شغّل (\u2066React\u2069) وملف \u2066config.py\u2069.\u2069')
   await ui.unmount()
 })
+
+test('an RTL list number is a Text of its own beside the item', async $ => {
+  const words = Array.from({ length: 24 }, () => 'كلمة').join(' ')
+  const ui = await $.ui.mount({ ...message(`1. ${words}\n2. قصير`), surface: 'desktop', viewport: { columns: 40, rows: 40 } } as never)
+  expect((await ui.find({ type: 'Text', text: /^1$/ }))?.text).toBe('1')
+  expect((await ui.find({ type: 'Text', text: /^2$/ }))?.text).toBe('2')
+  expect(await ui.find({ type: 'Text', text: /^\u200F\u2067قصير/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a full stop after inline code stays against it', async $ => {
+  const ui = await $.ui.mount({ ...message('بند قصير فيه `config.py`.'), surface: 'desktop' })
+  expect((await ui.find({ type: 'Text', text: /بند/ }))?.text).toBe('\u200F\u2067بند قصير فيه \u2066config.py\u2069.\u2069')
+  await ui.unmount()
+})
